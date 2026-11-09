@@ -9,9 +9,14 @@ jdk:
   - openjdk8
   - openjdk11
 
-branches:
-  only:
-    - master
-    - "2.13"
-
 script: mvn -B clean verify
+
+# Seal: hold the job open until Travis has archived this job's log up to the
+# Maven result, so the log harvested right after the job ends is complete.
+# Cannot change the build result (after_script).
+after_script:
+  - |
+    for i in $(seq 1 90); do
+      if curl -sf "https://api.travis-ci.com/v3/job/${TRAVIS_JOB_ID}/log.txt" | grep -qE "BUILD (SUCC""ESS|FAIL""URE)"; then echo "Travis log archived"; break; fi
+      echo "waiting for Travis log archive... ($((i*20))s)"; sleep 20
+    done
